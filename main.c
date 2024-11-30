@@ -211,24 +211,24 @@ bit64 handle_block(bit64 block)
 
         if( i == 15)
         {
-            // block = ( leftPart << 32) ^  rightPart;
-            // printf("ROUND: %d - ", i);
-            // print_bit64(block);
-            // printf("\n");
+            block = ( leftPart << 32) ^  rightPart;
+            printf("ROUND: %d - ", i);
+            print_bit64(block);
+            printf("\n");
             break;
         }
 
         block = (  rightPart  << 32 ) ^ leftPart;
 
-        // printf("ROUND: %d - ",i);
-        // print_bit64(block);
-        // printf("\n");
+        printf("ROUND: %d - ",i);
+        print_bit64(block);
+        printf("\n");
 
     }   
     block =  generic_permute(FPArr, 64, 64, 64, block);
-    // printf("RESULT AFTER FP:");
-    // print_bit64(block);
-    // printf("\n");
+    printf("RESULT AFTER FP:");
+    print_bit64(block);
+    printf("\n");
     return block;
 }
 
@@ -250,7 +250,7 @@ void generate_keys(bit64 key)
     }
 }
 
-void DES(bit64 *data, bit64 key, size_t size )
+void DES(bit64 *data, size_t size )
 {   
     bit64 result = IV;
     for(size_t i = 0; i < size; i++ )
@@ -281,31 +281,47 @@ void generate_IV()
 bit64 Alkim_Dogan[2] = {0x416c6b696d20446f, 0x67616e8000000000};
 bit64 * big_data;
 
-int main()
-{   
-    // this is for the test vector
-    bit64 block[1] = {0x4e6f772069732074}, key = 0x0123456789abcdef;
+void part1()
+{
+    bit64 block[1] = {0x4e6f772069732074};
+    printf("PART1\n");
+    DES(block,1);
+    printf("\n");
+}
+
+void part2()
+{
+    printf("PART2\n");
+    generate_IV();
+    DES(Alkim_Dogan, 2);
+    printf("\n");
+}
+
+void part3()
+{
     size_t size = POW2(23);
     big_data = malloc(sizeof(bit64) * size);
 
-    // printf("KEY-SCHEDULE\n");
-    // generate_keys(key);
-    // printf("\n");
+    printf("Size Of the data: %d\n", size);
+    DES(big_data, size);
+}
+
+int main()
+{   
+    bit64 key = 0x0123456789abcdef;
+
+    printf("KEY-SCHEDULE\n");
+    generate_keys(key);
+    printf("\n");
 
     // PART1
-    // printf("PART1\n");
-    // DES(block, key, 1);
-    // printf("\n");
+    part1();
 
-    // printf("\n"); printf("\n"); printf("\n");
+    printf("\n"); printf("\n"); printf("\n");
 
     // PART2
-    // printf("PART2\n");
-    // generate_IV();
-    // DES(Alkim_Dogan, key, 2);
-    // printf("\n");
+    part2();
 
     // PART3
-    printf("Size Of the data: %d\n", size);
-    DES(big_data, key, size);
+    //part3();
 }
