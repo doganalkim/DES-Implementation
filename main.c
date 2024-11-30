@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define ROUNDS 16
+#define POW2(x) (1 << (x))
 
 typedef unsigned long bit64;
 
@@ -107,7 +109,7 @@ short int FPArr[64] = {40, 8, 48, 16, 56, 24, 64, 32,
 
 short int rotations[16] = {1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
 
-bit64 keys[16] = {0};
+bit64 keys[16] = {0}, part2_OUTPUT, IV = 0;;
 
 bit64 generic_permute( short int * arr, int maxVal, int arrSize, short int outputSize, bit64 block)
 {
@@ -198,10 +200,6 @@ bit64 handle_block(bit64 block)
 {
     block = generic_permute(IParr,64,64, 64, block);
 
-    // printf("AFTER IP:");
-    // print_bit64(block);
-    // printf("\n");
-
     for(int i = 0; i < ROUNDS ; i++)
     {
         bit64 rightPart =  (  block << 32 ) >> 32; 
@@ -213,21 +211,17 @@ bit64 handle_block(bit64 block)
 
         if( i == 15)
         {
-            block = ( leftPart << 32) ^  rightPart;
-            // printf("%d - Round Result: ", i+1);
+            // block = ( leftPart << 32) ^  rightPart;
+            // printf("ROUND: %d - ", i);
             // print_bit64(block);
-            // printf(" Round Key:");
-            // print_bit64(keys[i]);
             // printf("\n");
             break;
         }
 
         block = (  rightPart  << 32 ) ^ leftPart;
 
-        // printf("%d - Round Result: ", i+1);
+        // printf("ROUND: %d - ",i);
         // print_bit64(block);
-        // printf(" Round Key:");
-        // print_bit64(keys[i]);
         // printf("\n");
 
     }   
@@ -249,17 +243,37 @@ void generate_keys(bit64 key)
         bit64 roundKey = apply_PC2(leftKey, rightKey);
 
         keys[i] = roundKey;
+
+        printf("ROUND %d: Key: ", i+1);
+        print_bit64(roundKey);
+        printf("\n");
     }
 }
 
-void DES(bit64 data, bit64 key )
+void DES(bit64 *data, bit64 key, size_t size )
 {   
-    bit64 block = 0x4e6f772069732074;
-    generate_keys(key);
-    for(long long unsigned int i = 0; i <8589934592 ; i++ )
+    bit64 result = IV;
+    for(size_t i = 0; i < size; i++ )
     {
-        bit64 encrypted_block =  handle_block(block);
+        result = result ^ data[i];
+        result =  handle_block(result);
     }
+}
+
+void generate_IV()
+{
+    // I seed the random generator with the current time
+    // Otherwise, it generates the same IV for each run
+    srand(time(NULL)); 
+
+    for(int i = 0; i < 16 ; i++)
+    {   
+        IV = IV ^ ( (   (bit64)(rand() % 16)  ) << ( i * 4 ) );
+    }
+
+    printf("IV:");
+    print_bit64(IV);
+    printf("\n");
 }
 
 // Alkim Dogan 41 6c 6b 69 6d 20 44 6f || 67 61 6e 80 00 00 00 00
@@ -268,7 +282,30 @@ bit64 Alkim_Dogan[2] = {0x416c6b696d20446f, 0x67616e8000000000};
 bit64 * big_data;
 
 int main()
-{
-    bit64 block = 0x4e6f772069732074, key = 0x0123456789abcdef;
-    DES(block, key);
+{   
+    // this is for the test vector
+    bit64 block[1] = {0x4e6f772069732074}, key = 0x0123456789abcdef;
+    size_t size = POW2(23);
+    big_data = malloc(sizeof(bit64) * size);
+
+    // printf("KEY-SCHEDULE\n");
+    // generate_keys(key);
+    // printf("\n");
+
+    // PART1
+    // printf("PART1\n");
+    // DES(block, key, 1);
+    // printf("\n");
+
+    // printf("\n"); printf("\n"); printf("\n");
+
+    // PART2
+    // printf("PART2\n");
+    // generate_IV();
+    // DES(Alkim_Dogan, key, 2);
+    // printf("\n");
+
+    // PART3
+    printf("Size Of the data: %d\n", size);
+    DES(big_data, key, size);
 }
