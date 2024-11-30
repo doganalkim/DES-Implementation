@@ -4,7 +4,6 @@
 #define ROUNDS 16
 
 typedef unsigned long bit64;
-typedef unsigned int bit32;
 
 short int IParr[64] = 
                 {58,50,42,34,26,18,10,2,
@@ -108,6 +107,8 @@ short int FPArr[64] = {40, 8, 48, 16, 56, 24, 64, 32,
 
 short int rotations[16] = {1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
 
+bit64 keys[16] = {0};
+
 bit64 generic_permute( short int * arr, int maxVal, int arrSize, short int outputSize, bit64 block)
 {
     bit64 res = 0, bit = 0;
@@ -193,16 +194,53 @@ bit64 apply_round(bit64 block, int i , bit64 roundKey)
 }
 
 
-bit64 handle_block(bit64 block, bit64 key)
+bit64 handle_block(bit64 block)
 {
     block = generic_permute(IParr,64,64, 64, block);
 
-    printf("AFTER IP:");
-    print_bit64(block);
-    printf("\n");
+    // printf("AFTER IP:");
+    // print_bit64(block);
+    // printf("\n");
 
+    for(int i = 0; i < ROUNDS ; i++)
+    {
+        bit64 rightPart =  (  block << 32 ) >> 32; 
+        bit64 leftPart =  ( block >> 32);
+        
+        bit64 roundResult = apply_round(rightPart,i,keys[i]);
+
+        leftPart = roundResult ^ leftPart;
+
+        if( i == 15)
+        {
+            block = ( leftPart << 32) ^  rightPart;
+            // printf("%d - Round Result: ", i+1);
+            // print_bit64(block);
+            // printf(" Round Key:");
+            // print_bit64(keys[i]);
+            // printf("\n");
+            break;
+        }
+
+        block = (  rightPart  << 32 ) ^ leftPart;
+
+        // printf("%d - Round Result: ", i+1);
+        // print_bit64(block);
+        // printf(" Round Key:");
+        // print_bit64(keys[i]);
+        // printf("\n");
+
+    }   
+    block =  generic_permute(FPArr, 64, 64, 64, block);
+    // printf("RESULT AFTER FP:");
+    // print_bit64(block);
+    // printf("\n");
+    return block;
+}
+
+void generate_keys(bit64 key)
+{
     bit64 leftKey = generic_permute( PCone_leftArr, 64, 28, 28, key ), rightKey = generic_permute(PCone_rightArr, 64, 28, 28, key );
-
     for(int i = 0; i < ROUNDS ; i++)
     {
         leftKey = circularRotate(leftKey, rotations[i]);
@@ -210,44 +248,24 @@ bit64 handle_block(bit64 block, bit64 key)
 
         bit64 roundKey = apply_PC2(leftKey, rightKey);
 
-        bit64 rightPart =  (  block << 32 ) >> 32; 
-        bit64 leftPart =  ( block >> 32);
-        
-        bit64 roundResult = apply_round(rightPart,i,roundKey);
-
-        leftPart = roundResult ^ leftPart;
-
-        if( i == 15)
-        {
-            block = ( leftPart << 32) ^  rightPart;
-            printf("%d - Round Result: ", i+1);
-            print_bit64(block);
-            printf(" Round Key:");
-            print_bit64(roundKey);
-            printf("\n");
-            break;
-        }
-
-        block = (  rightPart  << 32 ) ^ leftPart;
-
-        printf("%d - Round Result: ", i+1);
-        print_bit64(block);
-        printf(" Round Key:");
-        print_bit64(roundKey);
-        printf("\n");
-
-    }   
-    block =  generic_permute(FPArr, 64, 64, 64, block);
-    printf("RESULT AFTER FP:");
-    print_bit64(block);
-    return block;
+        keys[i] = roundKey;
+    }
 }
 
 void DES(bit64 data, bit64 key )
 {   
     bit64 block = 0x4e6f772069732074;
-    bit64 encrypted_block =  handle_block(block,key);
+    generate_keys(key);
+    for(long long unsigned int i = 0; i <8589934592 ; i++ )
+    {
+        bit64 encrypted_block =  handle_block(block);
+    }
 }
+
+// Alkim Dogan 41 6c 6b 69 6d 20 44 6f || 67 61 6e 80 00 00 00 00
+
+bit64 Alkim_Dogan[2] = {0x416c6b696d20446f, 0x67616e8000000000};
+bit64 * big_data;
 
 int main()
 {
