@@ -302,7 +302,7 @@ void part3()
     size_t size = POW2(23);
     big_data = malloc(sizeof(bit64) * size);
 
-    printf("Size Of the data: %d\n", size);
+    printf("Size Of the data: %zu\n", size);
     DES(big_data, size);
 }
 
